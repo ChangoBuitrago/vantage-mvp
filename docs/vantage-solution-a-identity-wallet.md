@@ -158,13 +158,7 @@ sequenceDiagram
         Bundler-->>Frontend: Error (not sponsored)
     end
     
-    note right of Paymaster
-        Gas Manager Policy Should Include:
-        - Only sponsor settle() function
-        - Only on Vantage contract address
-        - Rate limit per address (e.g. 10 tx/day)
-        - Daily spending cap (e.g. 10 MATIC/day)
-    end note
+    note right of Paymaster: Gas Manager Policy: Only sponsor settle() on Vantage contract. Rate limit (e.g. 10 tx/day). Daily spending cap (e.g. 10 MATIC/day).
 ```
 
 **Gas Manager Security:** Configure Alchemy Gas Manager with strict policies to prevent abuse:
