@@ -36,7 +36,8 @@ The system is split into three parts you can build and test **separately**, then
 
 * **What it does:** Calculates the royalty, accepts Fiat payment (Stripe), and issues a cryptographic **Permit**. It is **stateless**—it does not execute blockchain transactions itself.
 * **Key Responsibility:** Verifying payment and signing the permit key.
-* **Tech:** Node.js (Lambda), DynamoDB, Stripe API.
+* **Tech:** Next.js API Routes (for monorepo with A), or standalone Node.js/Lambda with Database.
+* **Deployment Note:** In practice, Module C is typically implemented as API routes (`/api/`) in the same Next.js application as Module A. This eliminates repository fragmentation and allows the frontend and backend to share TypeScript types.
 
 ---
 
@@ -71,32 +72,119 @@ graph LR
 
 ## Developer Roles & Build Order
 
-To move fast, we split development into two parallel tracks:
+For modern web development (Next.js/React), the recommended split is:
 
-### Track 1: The Product Lead (Dev 1)
+**Dev 1 owns Modules A + C** (application layer)  
+**Dev 2 owns Module B** (protocol layer)
 
-* **Owns:** **Module A** (Frontend) + **Client-Side Integration**.
-* **Tasks:**
-1. Build Login & Vault UI.
-2. Build the "Sell" form.
-3. **Crucial:** Write the logic that calls `GET /permit` and sends the UserOp to Alchemy.
+This architecture provides significant advantages over splitting A and C across developers:
 
-
-
-### Track 2: The Protocol Lead (Dev 2)
-
-* **Owns:** **Module B** (Chain) + **Module C** (Backend).
-* **Tasks:**
-1. **First Priority:** Write & Deploy Module B (Contract) to Testnet. (Dev 1 needs the Address & ABI).
-2. Build the Stripe Integration.
-3. Implement the "Permit Signing" logic (Crypto).
-
-
+- **Faster iteration:** Dev 1 controls both UI and API, eliminating cross-repository coordination overhead
+- **Type safety:** Shared TypeScript definitions between frontend and backend in a monorepo
+- **Single deployment:** One Next.js application instead of separate frontend and backend services
 
 ---
 
-## Next Steps
+### Dev 1: Full-Stack Application Lead
 
-1. **Dev 2** starts **Module B**: Deploy the contract to Polygon Amoy.
-2. **Dev 1** starts **Module A**: Create the Next.js repo and integrate Magic.link.
-3. **Converge**: Once the contract is deployed, Dev 1 connects the "My Vault" UI to the real contract address.
+**Responsibility:** Modules A + C  
+**Repository:** `vantage-app` (Next.js monorepo)
+
+**Deliverables:**
+1. **Frontend (Module A):**
+   - Magic authentication and session management
+   - "My Vault" UI (Alchemy NFT API integration)
+   - "Sell" flow UI with Stripe Checkout integration
+   - Transaction execution via Alchemy AA (gasless)
+
+2. **Backend API (Module C):**
+   - API routes: `/api/quote`, `/api/transfer/initiate`, `/api/transfer/[id]/permit`
+   - Stripe webhook handler (`/api/webhooks/stripe`)
+   - Database operations (transfer records, status management)
+   - **Permit signing** (cryptographic signature generation with backend private key)
+
+**Key Skills:** React/Next.js, API design, Stripe integration, ethers.js (signing), database modeling
+
+---
+
+### Dev 2: Protocol Engineer
+
+**Responsibility:** Module B  
+**Repository:** `vantage-contracts` (Hardhat/Foundry)
+
+**Deliverables:**
+1. **Smart Contract:**
+   - `VantageAssetRegistry.sol` (ERC-721 with permit-gated transfers)
+   - Deployment scripts for testnet and mainnet
+   - Contract verification (Polygonscan/Basescan)
+
+2. **Developer Handoff Package:**
+   - `VantageRegistry.json` (contract ABI)
+   - `contract-address.ts` (deployed address by network)
+   - Example permit signing code (JavaScript/TypeScript) for Dev 1 to integrate
+
+3. **Testing & Security:**
+   - Comprehensive unit tests (mint, settle, permit verification)
+   - Integration tests simulating attack vectors
+   - Gas optimization analysis
+
+**Key Skills:** Solidity, smart contract security, Hardhat/Foundry, cryptography (ECDSA)
+
+---
+
+## Collaboration Flow
+
+### 1. Initial Setup (Week 1)
+
+**Dev 2 (Protocol):**
+- Write and test `VantageAssetRegistry` contract
+- Deploy to Polygon Amoy testnet
+- **Deliver to Dev 1:** Contract ABI, deployed address, and permit signing example
+
+**Dev 1 (Application):**
+- Initialize Next.js project with TypeScript
+- Implement Magic authentication
+- Set up Stripe account and test mode
+- Build "My Vault" UI shell
+
+### 2. Integration (Week 2)
+
+**Dev 1 (Application):**
+- Import contract ABI and address from Dev 2
+- Implement API routes (`/api/transfer/initiate`, `/api/webhooks/stripe`, `/api/transfer/[id]/permit`)
+- Integrate permit signing logic (using example from Dev 2)
+- Wire frontend to call own API routes
+- Test full flow: initiate → Stripe payment → claim permit → execute settle
+
+**Dev 2 (Protocol):**
+- Support Dev 1 with permit signature troubleshooting
+- Act as security reviewer (code review for private key handling)
+- Write integration tests against deployed testnet contract
+- Document any contract quirks or gas optimization tips for Dev 1
+
+---
+
+## Security Requirements
+
+Since Dev 1 handles the **backend private key** (for signing permits), these security rules are critical:
+
+### Environment Variable Management
+- ✅ Store `PERMIT_SIGNER_PRIVATE_KEY` in `.env.local` (Next.js) or environment secrets (Vercel/Railway)
+- ✅ Add `.env.local` to `.gitignore`
+- ❌ **Never** commit `.env` files or hardcode private keys in source code
+
+### Key Generation
+- Use Dev 2's tooling or `ethers.Wallet.createRandom()` to generate a new key for testnet
+- The public address of this key must match `COMPLIANCE_SIGNER` in the deployed contract
+
+### Production Considerations
+- For mainnet, consider using a **Hardware Security Module (HSM)** or **AWS KMS** instead of a raw private key
+- Implement rate limiting on `/api/transfer/[id]/permit` to prevent permit farming
+
+---
+
+## Success Metrics
+
+- **Week 1 Complete:** Dev 2 delivers working contract on testnet; Dev 1 has login + Vault working
+- **Week 2 Complete:** Full end-to-end flow works: User pays → Permit generated → NFT transfers on-chain
+- **Handoff Quality:** Dev 1 can sign valid permits without asking Dev 2 for help
