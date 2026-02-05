@@ -36,7 +36,8 @@ The system is split into three parts you can build and test **separately**, then
 
 * **What it does:** Calculates the royalty, accepts Fiat payment (Stripe), and issues a cryptographic **Permit**. It is **stateless**—it does not execute blockchain transactions itself.
 * **Key Responsibility:** Verifying payment and signing the permit key.
-* **Tech:** Node.js (Lambda), DynamoDB, Stripe API.
+* **Tech:** Next.js API Routes (or Node.js/Lambda), Database (Postgres/DynamoDB), Stripe API.
+* **Note:** In practice, Module C is typically built as API routes within the same Next.js app as Module A (see Developer Roles below).
 
 ---
 
@@ -71,32 +72,73 @@ graph LR
 
 ## Developer Roles & Build Order
 
-To move fast, we split development into two parallel tracks:
+For a modern web stack (like Next.js), **Dev 1 taking both A and C is the superior architecture.**
 
-### Track 1: The Product Lead (Dev 1)
+### Why Merging A + C Works Better
 
-* **Owns:** **Module A** (Frontend) + **Client-Side Integration**.
-* **Tasks:**
-1. Build Login & Vault UI.
-2. Build the "Sell" form.
-3. **Crucial:** Write the logic that calls `GET /permit` and sends the UserOp to Alchemy.
+In modern development, the "Frontend" and "Backend API" often live in the same repository (e.g., a Next.js app where `app/` is the UI and `app/api/` is the Backend).
 
-
-
-### Track 2: The Protocol Lead (Dev 2)
-
-* **Owns:** **Module B** (Chain) + **Module C** (Backend).
-* **Tasks:**
-1. **First Priority:** Write & Deploy Module B (Contract) to Testnet. (Dev 1 needs the Address & ABI).
-2. Build the Stripe Integration.
-3. Implement the "Permit Signing" logic (Crypto).
-
-
+1. **Speed:** Dev 1 doesn't need to ask Dev 2 to change an API endpoint. If the UI needs extra data, Dev 1 just adds it to their own API route.
+2. **Simplicity:** You eliminate an entire repository. Instead of `frontend-repo` and `backend-repo`, you just have `vantage-app` (A+C) and `vantage-contracts` (B).
+3. **Type Safety:** If using TypeScript, Dev 1 can share the `Transfer` type definitions between the frontend and backend automatically.
 
 ---
 
-## Next Steps
+### The New Role Split
 
-1. **Dev 2** starts **Module B**: Deploy the contract to Polygon Amoy.
-2. **Dev 1** starts **Module A**: Create the Next.js repo and integrate Magic.link.
-3. **Converge**: Once the contract is deployed, Dev 1 connects the "My Vault" UI to the real contract address.
+#### 👨‍💻 Dev 1: The "Full Stack" App Lead
+
+**Scope:** **Module A** (Identity/UI) + **Module C** (Stripe/Permits).  
+**Repo:** `vantage-app` (Next.js)
+
+* **The UI:** Login, Vault, "Sell" Form.
+* **The API:** Receives the Stripe Webhook, updates the DB, and **signs the Permit**.
+* **The Execution:** Takes the permit from their own API and submits it to the blockchain.
+
+#### 👩‍💻 Dev 2: The Protocol Engineer
+
+**Scope:** **Module B** (Chain).  
+**Repo:** `vantage-contracts` (Hardhat/Foundry)
+
+* **Solidity:** Writing the `VantageAssetRegistry.sol` contract.
+* **Security:** This is high-stakes code. If Dev 2 has less "app" work, they can spend more time writing robust tests and security checks for the contract.
+* **Tooling:** Writing scripts to verify contracts, manage upgrades, or seed test data.
+
+---
+
+### Revised "Handshake" (How They Collaborate)
+
+Since Dev 1 is doing the heavy lifting on the app logic, **Dev 2's output becomes a dependency for Dev 1.**
+
+1. **Dev 2 (Protocol):** Writes the contract and deploys it to Testnet.
+2. **The Handoff:** Dev 2 gives Dev 1 two files:
+   - `VantageRegistry.json` (The ABI)
+   - `address.js` (The deployed address)
+   - *(Bonus)* A generic "signing script" in JS that Dev 1 can paste into their backend to generate valid permits.
+
+3. **Dev 1 (App):** Imports those files into the Next.js app and builds the rest.
+
+---
+
+### Security Considerations
+
+Since Dev 1 is now handling the **Private Key** (for signing permits) in the backend, ensure they know basic security practices:
+
+* **Rule:** Never commit `.env` files to Git.
+* **Rule:** The Private Key used for signing must be stored in environment variables (e.g., `PERMIT_SIGNER_KEY`), never hardcoded.
+
+---
+
+## Implementation Timeline
+
+**Week 1**
+
+* **Dev 2:** Write Smart Contract, Test, Deploy to Polygon Amoy. **Deliver ABI & Address.**
+* **Dev 1:** Setup Next.js. Build Login (Magic). Build "Sell" UI. Set up Stripe account.
+
+**Week 2**
+
+* **Dev 2:** Act as QA/Security Auditor. Write advanced integration tests. Maybe help Dev 1 with the specific `ethers.js` crypto signing logic if it gets tricky.
+* **Dev 1:** Implement the API routes (`/api/initiate`, `/api/webhook`, `/api/permit`). Wire up the frontend to call these.
+
+**Result:** This balance is more efficient, as Dev 1 avoids the friction of waiting for "the backend person" to fix endpoints.
