@@ -49,15 +49,15 @@ graph LR
     end
 
     subgraph Solutions [The Stack]
-        A[A. Frontend (App)]
-        C[C. Backend (API)]
-        B[B. Contract (Chain)]
+        A["A. Frontend (App)"]
+        C["C. Backend (API)"]
+        B["B. Contract (Chain)"]
     end
 
     U -->|1. Clicks Pay| A
     A -->|2. Stripe Payment| C
     C -->|3. Returns Permit| A
-    A -->|4. Executes settle()| B
+    A -->|4. Executes settle| B
 ```
 
 **The Critical Flow:**
