@@ -26,7 +26,7 @@ The system is split into three parts you can build and test **separately**, then
 
 ### [Module B — Chain / Governance](./vantage-module-b-chain.md)
 
-**"The Road"**
+**"The Turnstile"**
 
 * **What it does:** The on-chain NFT contract. It blocks all standard transfers and only allows movement via the `settle()` function if a valid permit is provided.
 * **Key Responsibility:** Security and final settlement. It trusts no one except the cryptographic signature from Module C.
