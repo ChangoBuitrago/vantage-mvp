@@ -1,6 +1,6 @@
-# Vantage Solutions Overview
+# Vantage Modules Overview
 
-**Read this first.** This document explains the three solutions that make up Vantage and how to navigate to their detailed specs.
+**Read this first.** This document explains the three modules that make up Vantage and how to navigate to their detailed specs.
 
 ---
 
@@ -10,27 +10,27 @@ Vantage is a **governance layer** for digital product passports (NFTs). When a r
 
 ---
 
-## Three Solutions
+## Three Modules
 
 The system is split into three parts you can build and test **separately**, then **combine**.
 
-### [Solution A — Identity & Wallet](./vantage-solution-a-identity-wallet.md)
+### [Module A — Identity & Wallet](./vantage-module-a-identity-wallet.md)
 
 **"The Client"**
 
 * **What it does:** Logs users in, displays their Vault, and **executes the transfer**. It acts as the "steering wheel" for the user.
-* **Key Responsibility:** Takes the permit from Solution C and submits the transaction to Solution B.
+* **Key Responsibility:** Takes the permit from Module C and submits the transaction to Module B.
 * **Tech:** Magic (Auth), Alchemy AA (Gasless Execution), React/Next.js.
 
-### [Solution B — Chain / Governance](./vantage-solution-b-chain.md)
+### [Module B — Chain / Governance](./vantage-module-b-chain.md)
 
 **"The Road"**
 
 * **What it does:** The on-chain NFT contract. It blocks all standard transfers and only allows movement via the `settle()` function if a valid permit is provided.
-* **Key Responsibility:** Security and final settlement. It trusts no one except the cryptographic signature from Solution C.
+* **Key Responsibility:** Security and final settlement. It trusts no one except the cryptographic signature from Module C.
 * **Tech:** Solidity, OpenZeppelin (ERC-721), Hardhat (Polygon).
 
-### [Solution C — Settlement Orchestration](./vantage-solution-c-settlement.md)
+### [Module C — Settlement Orchestration](./vantage-module-c-settlement.md)
 
 **"The Permit Vending Machine"**
 
@@ -48,7 +48,7 @@ graph LR
         U[Reseller]
     end
 
-    subgraph Solutions [The Stack]
+    subgraph Modules [The Stack]
         A["A. Frontend (App)"]
         C["C. Backend (API)"]
         B["B. Contract (Chain)"]
@@ -62,10 +62,10 @@ graph LR
 
 **The Critical Flow:**
 
-1. **Reseller pays** via Solution C (Stripe).
-2. Solution C marks the transfer as `PAID` and **generates a Permit** (signature).
-3. Solution A (Frontend) **claims the Permit** and submits the `settle()` transaction to Solution B.
-4. Solution B verifies the signature and moves the NFT.
+1. **Reseller pays** via Module C (Stripe).
+2. Module C marks the transfer as `PAID` and **generates a Permit** (signature).
+3. Module A (Frontend) **claims the Permit** and submits the `settle()` transaction to Module B.
+4. Module B verifies the signature and moves the NFT.
 
 ---
 
@@ -75,7 +75,7 @@ To move fast, we split development into two parallel tracks:
 
 ### Track 1: The Product Lead (Dev 1)
 
-* **Owns:** **Solution A** (Frontend) + **Client-Side Integration**.
+* **Owns:** **Module A** (Frontend) + **Client-Side Integration**.
 * **Tasks:**
 1. Build Login & Vault UI.
 2. Build the "Sell" form.
@@ -85,9 +85,9 @@ To move fast, we split development into two parallel tracks:
 
 ### Track 2: The Protocol Lead (Dev 2)
 
-* **Owns:** **Solution B** (Chain) + **Solution C** (Backend).
+* **Owns:** **Module B** (Chain) + **Module C** (Backend).
 * **Tasks:**
-1. **First Priority:** Write & Deploy Solution B (Contract) to Testnet. (Dev 1 needs the Address & ABI).
+1. **First Priority:** Write & Deploy Module B (Contract) to Testnet. (Dev 1 needs the Address & ABI).
 2. Build the Stripe Integration.
 3. Implement the "Permit Signing" logic (Crypto).
 
@@ -97,6 +97,6 @@ To move fast, we split development into two parallel tracks:
 
 ## Next Steps
 
-1. **Dev 2** starts **Solution B**: Deploy the contract to Polygon Amoy.
-2. **Dev 1** starts **Solution A**: Create the Next.js repo and integrate Magic.link.
+1. **Dev 2** starts **Module B**: Deploy the contract to Polygon Amoy.
+2. **Dev 1** starts **Module A**: Create the Next.js repo and integrate Magic.link.
 3. **Converge**: Once the contract is deployed, Dev 1 connects the "My Vault" UI to the real contract address.

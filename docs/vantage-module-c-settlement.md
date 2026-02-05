@@ -1,15 +1,15 @@
-# Solution C: Settlement Orchestration
+# Module C: Settlement Orchestration
 
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Quote API, Stripe payment, permit generation (stateless "Permit Vending Machine")  
-**Depends on:** Solution A (identity, NFT data), Solution B (contract address, permit format)  
+**Depends on:** Module A (identity, NFT data), Module B (contract address, permit format)  
 **Reference:** [vantage-technical-spec.md](../vantage-technical-spec.md)
 
 ---
 
 ## Purpose
 
-Solution C is the **permit generation layer** (the "Permit Vending Machine"): it computes the exit tax (royalty), collects payment from the reseller via Stripe, and generates the cryptographic permit. The **frontend (Solution A) executes the on-chain `settle()`**, not the backend. This keeps the backend stateless and simple. C depends on A for auth and NFT data (holding period); and on B for the contract address and permit format.
+Module C is the **permit generation layer** (the "Permit Vending Machine"): it computes the exit tax (royalty), collects payment from the reseller via Stripe, and generates the cryptographic permit. The **frontend (Module A) executes the on-chain `settle()`**, not the backend. This keeps the backend stateless and simple. C depends on A for auth and NFT data (holding period); and on B for the contract address and permit format.
 
 ---
 
@@ -21,11 +21,11 @@ Solution C is the **permit generation layer** (the "Permit Vending Machine"): it
 sequenceDiagram
     autonumber
     participant R as Reseller
-    participant App as App (Solution A)
-    participant API as Backend API (Solution C)
+    participant App as App (Module A)
+    participant API as Backend API (Module C)
     participant DB as DynamoDB
     participant Stripe as Stripe
-    participant Contract as Vantage Registry (Solution B)
+    participant Contract as Vantage Registry (Module B)
 
     rect rgb(240, 248, 255)
         Note over R, Stripe: PART 1: PAYMENT

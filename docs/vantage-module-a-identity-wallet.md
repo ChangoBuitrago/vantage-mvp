@@ -1,4 +1,4 @@
-# Solution A: Identity & Wallet
+# Module A: Identity & Wallet
 
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Auth, embedded wallet, gasless signing, NFT list and transfer history  
@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Solution A delivers the **identity and wallet layer** for Vantage: passwordless login, embedded wallets, gasless transactions (Account Abstraction), and NFT indexing. It can be developed and tested without the settlement backend or smart contracts. When combined with Solutions B and C, the full app uses A for login, "My Vault," and **executing the on-chain `settle()` call** (frontend claims the permit from C and executes the transaction).
+Module A delivers the **identity and wallet layer** for Vantage: passwordless login, embedded wallets, gasless transactions (Account Abstraction), and NFT indexing. It can be developed and tested without the settlement backend or smart contracts. When combined with Modules B and C, the full app uses A for login, "My Vault," and **executing the on-chain `settle()` call** (frontend claims the permit from C and executes the transaction).
 
 ---
 
@@ -134,7 +134,7 @@ Magic wallet is the signer/owner of the Smart Account. Frontend (A) builds the U
 sequenceDiagram
     autonumber
     participant User as User (Magic Wallet)
-    participant Frontend as Frontend (Solution A)
+    participant Frontend as Frontend (Module A)
     participant Bundler as Alchemy Bundler
     participant Paymaster as Alchemy Gas Manager
     participant Chain as Polygon/Base

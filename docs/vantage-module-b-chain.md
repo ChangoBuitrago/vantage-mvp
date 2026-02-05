@@ -1,4 +1,4 @@
-# Solution B: Chain / Governance
+# Module B: Chain / Governance
 
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Smart contracts, deployment, permit-gated transfers  
@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Solution B delivers the **on-chain governance layer**: the sovereign ERC-721 asset registry with permit-gated `settle()` so that transfers are only allowed after the backend has verified payment and signed a permit. No Stripe, Magic, or settlement backend required to develop and test B. When combined with C, the settlement service calls B's contract to execute transfers.
+Module B delivers the **on-chain governance layer**: the sovereign ERC-721 asset registry with permit-gated `settle()` so that transfers are only allowed after the backend has verified payment and signed a permit. No Stripe, Magic, or settlement backend required to develop and test B. When combined with C, the settlement service calls B's contract to execute transfers.
 
 ---
 
