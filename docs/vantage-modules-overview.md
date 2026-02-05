@@ -12,9 +12,9 @@ The system is split into three parts you can build and test **separately**, then
 
 ### [Module A — Identity & Wallet](./vantage-module-a-identity-wallet.md)
 
-**"The Client"**
+**"The Passenger"**
 
-* **What it does:** Logs users in, displays their Vault, and **executes the transfer**. It acts as the "steering wheel" for the user.
+* **What it does:** The user/identity holding the ticket and pushing the gate. Logs users in, displays their Vault, and **executes the transfer**.
 * **Key Responsibility:** Takes the permit from Module C and submits the transaction to Module B.
 * **Tech:** Magic (Auth), Alchemy AA (Gasless Execution), React/Next.js.
 
@@ -22,16 +22,16 @@ The system is split into three parts you can build and test **separately**, then
 
 **"The Turnstile"**
 
-* **What it does:** The on-chain NFT contract. It blocks all standard transfers and only allows movement via the `settle()` function if a valid permit is provided.
+* **What it does:** The Smart Contract. It remains locked until a cryptographic signature is presented. Blocks all standard transfers; only allows movement via `settle()` with a valid permit.
 * **Key Responsibility:** Security and final settlement. It trusts no one except the cryptographic signature from Module C.
 * **Tech:** Solidity, OpenZeppelin (ERC-721), Hardhat (Polygon).
 
 ### [Module C — Settlement Orchestration](./vantage-module-c-settlement.md)
 
-**"The Permit Vending Machine"**
+**"The Ticket Booth"**
 
-* **What it does:** Calculates the royalty, accepts Fiat payment (Stripe), and issues a cryptographic **Permit**. It is **stateless**—it does not execute blockchain transactions itself.
-* **Key Responsibility:** Verifying payment and signing the permit key.
+* **What it does:** The Backend/Stripe. Verifies payment and issues the digital "ticket" (permit). It is **stateless**—it does not execute blockchain transactions itself.
+* **Key Responsibility:** Verifying payment and signing the permit.
 * **Tech:** Next.js API Routes (for monorepo with A), or standalone Node.js/Lambda with Database.
 * **Deployment Note:** In practice, Module C is typically implemented as API routes (`/api/`) in the same Next.js application as Module A. This eliminates repository fragmentation and allows the frontend and backend to share TypeScript types.
 

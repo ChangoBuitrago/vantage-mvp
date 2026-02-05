@@ -1,7 +1,9 @@
 # Module C: Settlement Orchestration
 
+**"The Ticket Booth"** — The Backend/Stripe. Verifies payment and issues the digital "ticket" (permit).
+
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
-**Scope:** Quote API, Stripe payment, permit generation (stateless "Permit Vending Machine")  
+**Scope:** Quote API, Stripe payment, permit generation (stateless "Ticket Booth")  
 **Depends on:** Module A (identity, NFT data), Module B (contract address, permit format)  
 **Reference:** [vantage-technical-spec.md](../vantage-technical-spec.md)
 
@@ -9,13 +11,13 @@
 
 ## Purpose
 
-Module C is the **permit generation layer** (the "Permit Vending Machine"): it computes the exit tax (royalty), collects payment from the reseller via Stripe, and generates the cryptographic permit. The **frontend (Module A) executes the on-chain `settle()`**, not the backend. This keeps the backend stateless and simple. C depends on A for auth and NFT data (holding period); and on B for the contract address and permit format.
+Module C is the **permit generation layer** (the "Ticket Booth"): it computes the exit tax (royalty), collects payment from the reseller via Stripe, and issues the digital "ticket" (permit). The **frontend (Module A) executes the on-chain `settle()`**, not the backend. This keeps the backend stateless and simple. C depends on A for auth and NFT data (holding period); and on B for the contract address and permit format.
 
 ---
 
 ## Sequence Flow
 
-**"Permit Vending Machine" model:** Backend verifies payment and generates permit; frontend executes settle.
+**"Ticket Booth" model:** Backend verifies payment and issues permit; frontend executes settle.
 
 ```mermaid
 sequenceDiagram

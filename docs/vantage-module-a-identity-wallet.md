@@ -1,5 +1,7 @@
 # Module A: Identity & Wallet
 
+**"The Passenger"** — The user/identity holding the ticket and pushing the gate.
+
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Auth, embedded wallet, gasless signing, NFT list and transfer history  
 **Depends on:** Nothing (standalone)  
@@ -88,7 +90,7 @@ sequenceDiagram
   - C calls Alchemy NFT API directly with contract address and owner, or
   - A exposes an API/SDK method such as `getTransferHistory(ownerAddress, contractAddress)` that wraps Alchemy.
 
-### To Chain (B) — "Permit Vending Machine" Model
+### To Chain (B) — "Ticket Booth" Model
 
 - **Execution:** After reseller pays (C sets status to `paid`), the **frontend (A) calls `GET /permit` from C**, receives the permit and settle params, then **executes `settle()` on the contract (B)** via Alchemy AA (gasless).
 - C does **not** execute settle; frontend does.

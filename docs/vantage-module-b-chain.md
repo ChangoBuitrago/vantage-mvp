@@ -1,5 +1,7 @@
 # Module B: Chain / Governance
 
+**"The Turnstile"** — The Smart Contract. It remains locked until a cryptographic signature is presented.
+
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Smart contracts, deployment, permit-gated transfers  
 **Depends on:** Nothing (standalone)  
