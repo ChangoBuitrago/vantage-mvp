@@ -4,6 +4,8 @@
 
 Vantage is a **governance layer** for digital product passports (NFTs). When a reseller sells an asset, they pay an **exit tax** (royalty) via Stripe; only then can the NFT transfer to the new owner. The physical sale happens elsewhere (eBay, private sale, etc.); Vantage only governs the **digital twin** and enforces brand rules (royalties, transfer locks).
 
+**Think of it like a subway:** the reseller (passenger) pays at the **Ticket Booth** (Stripe), receives a permit (ticket), and passes through the **Turnstile** (smart contract) to complete the transfer.
+
 ---
 
 ## Three Modules
