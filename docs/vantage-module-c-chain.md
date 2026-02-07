@@ -1,4 +1,4 @@
-# Module B: Chain / Governance
+# Module C: Chain / Governance
 
 **"The Turnstile"** — The Smart Contract. It remains locked until a cryptographic signature is presented.
 
@@ -11,7 +11,7 @@
 
 ## Purpose
 
-Module B delivers the **on-chain governance layer**: the sovereign ERC-721 asset registry with permit-gated `settle()` so that transfers are only allowed after the backend has verified payment and signed a permit. No Stripe, Magic, or settlement backend required to develop and test B. When combined with C, the settlement service calls B's contract to execute transfers.
+Module C delivers the **on-chain governance layer**: the sovereign ERC-721 asset registry with permit-gated `settle()` so that transfers are only allowed after the backend has verified payment and signed a permit. No Stripe, Magic, or settlement backend required to develop and test C. When combined with B, the settlement service calls C's contract to execute transfers.
 
 ---
 
@@ -100,13 +100,13 @@ function settle(
 
 ---
 
-## Interfaces (What B Exposes to Others)
+## Interfaces (What C Exposes to Others)
 
-### To Settlement (C)
+### To Settlement (B)
 
 - **Contract address** and **ABI** (after deployment)
-- **Permit payload:** Same as above so C's backend signer produces a signature the contract accepts
-- No runtime dependency from B to C; B is an on-chain artifact C calls via RPC
+- **Permit payload:** Same as above so B's backend signer produces a signature the contract accepts
+- No runtime dependency from C to B; C is an on-chain artifact B calls via RPC
 
 ### To Identity / Frontend (A)
 
@@ -129,11 +129,11 @@ function settle(
 - [ ] Mint (owner only) works; direct `transferFrom` reverts
 - [ ] With a test permit (signed by compliance signer), `settle()` transfers NFT and emits `TransferSettled`
 - [ ] Invalid or wrong-signer permit reverts
-- [ ] ABI and permit format documented for C
+- [ ] ABI and permit format documented for B
 
 ---
 
-## When Combined With C
+## When Combined With B
 
-- C configures contract address and ABI
-- C generates permit with same payload; C (or frontend with Magic) submits `settle()` via Alchemy AA; gas sponsored by Gas Manager
+- B configures contract address and ABI
+- B generates permit with same payload; B (or frontend with Magic) submits `settle()` via Alchemy AA; gas sponsored by Gas Manager

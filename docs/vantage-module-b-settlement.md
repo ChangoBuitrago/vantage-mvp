@@ -1,17 +1,17 @@
-# Module C: Settlement Orchestration
+# Module B: Settlement Orchestration
 
 **"The Ticket Booth"** — The Backend/Stripe. Verifies payment and issues the digital "ticket" (permit).
 
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Quote API, Stripe payment, permit generation (stateless "Ticket Booth")  
-**Depends on:** Module A (identity, NFT data), Module B (contract address, permit format)  
+**Depends on:** Module A (identity, NFT data), Module C (contract address, permit format)  
 **Reference:** [vantage-technical-spec.md](../vantage-technical-spec.md)
 
 ---
 
 ## Purpose
 
-Module C is the **permit generation layer** (the "Ticket Booth"): it computes the exit tax (royalty), collects payment from the reseller via Stripe, and issues the digital "ticket" (permit). The **frontend (Module A) executes the on-chain `settle()`**, not the backend. This keeps the backend stateless and simple. C depends on A for auth and NFT data (holding period); and on B for the contract address and permit format.
+Module B is the **permit generation layer** (the "Ticket Booth"): it computes the exit tax (royalty), collects payment from the reseller via Stripe, and issues the digital "ticket" (permit). The **frontend (Module A) executes the on-chain `settle()`**, not the backend. This keeps the backend stateless and simple. B depends on A for auth and NFT data (holding period); and on C for the contract address and permit format.
 
 ---
 
@@ -24,10 +24,10 @@ sequenceDiagram
     autonumber
     participant R as Reseller
     participant App as App (Module A)
-    participant API as Backend API (Module C)
+    participant API as Backend API (Module B)
     participant DB as DynamoDB
     participant Stripe as Stripe
-    participant Contract as Vantage Registry (Module B)
+    participant Contract as Vantage Registry (Module C)
 
     rect rgb(240, 248, 255)
         Note over R, Stripe: PART 1: PAYMENT
@@ -92,15 +92,15 @@ sequenceDiagram
 
 ---
 
-## Interfaces (What C Consumes)
+## Interfaces (What B Consumes)
 
 ### From A (Identity & Wallet)
 
 - **Auth:** Validate DIDToken; get reseller/collector `publicAddress`
-- **NFT data:** Holding period for royalty — C calls Alchemy NFT API (or A's API) with owner and contract address to get last transfer date
-- **Execution (frontend):** A (frontend) executes `settle()` with permit from C; backend doesn't need to sign or submit UserOps
+- **NFT data:** Holding period for royalty — B calls Alchemy NFT API (or A's API) with owner and contract address to get last transfer date
+- **Execution (frontend):** A (frontend) executes `settle()` with permit from B; backend doesn't need to sign or submit UserOps
 
-### From B (Chain)
+### From C (Chain)
 
 - **Contract address** and **ABI**
 - **Permit format:** `keccak256(abi.encodePacked(transferId, from, to, tokenId, salePrice))` signed by backend; contract expects this and `COMPLIANCE_SIGNER`
@@ -109,9 +109,9 @@ sequenceDiagram
 
 ## Flow Summary
 
-1. Reseller initiates → C creates transfer (`pending_payment`) and Stripe session → returns checkout URL
-2. Reseller pays → Stripe webhook → C sets `paid` (does not execute settle)
-3. Reseller (frontend) calls `GET /permit` → C returns permit if status is `paid`
+1. Reseller initiates → B creates transfer (`pending_payment`) and Stripe session → returns checkout URL
+2. Reseller pays → Stripe webhook → B sets `paid` (does not execute settle)
+3. Reseller (frontend) calls `GET /permit` → B returns permit if status is `paid`
 4. Frontend (A) builds UserOp and calls `settle()` via Alchemy AA (gasless) → Contract executes
 5. (Optional) Frontend calls `POST /transfer/:id/complete` with txHash → C sets `settled`
 
@@ -180,8 +180,8 @@ stateDiagram-v2
 
 ---
 
-## When Combined With A and B
+## When Combined With A and C
 
-- Frontend (A) uses Magic for login and "My Vault"; after reseller pays (C), frontend calls `GET /permit` from C, then uses A's Alchemy AA SDK to execute `settle()` (gasless)
-- C's permit signer matches B's `COMPLIANCE_SIGNER` so the contract accepts the permit
-- Full flow: Reseller pays exit tax via C → C sets `paid` → Frontend (A) claims permit from C → Frontend executes `settle()` on B (gas sponsored) → Collector receives NFT
+- Frontend (A) uses Magic for login and "My Vault"; after reseller pays (B), frontend calls `GET /permit` from B, then uses A's Alchemy AA SDK to execute `settle()` (gasless)
+- B's permit signer matches C's `COMPLIANCE_SIGNER` so the contract accepts the permit
+- Full flow: Reseller pays exit tax via B → B sets `paid` → Frontend (A) claims permit from B → Frontend executes `settle()` on C (gas sponsored) → Collector receives NFT

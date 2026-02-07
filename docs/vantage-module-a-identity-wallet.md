@@ -11,13 +11,13 @@
 
 ## Purpose
 
-Module A delivers the **identity and wallet layer** for Vantage: passwordless login, embedded wallets, gasless transactions (Account Abstraction), and NFT indexing. It can be developed and tested without the settlement backend or smart contracts. When combined with Modules B and C, the full app uses A for login, "My Vault," and **executing the on-chain `settle()` call** (frontend claims the permit from C and executes the transaction).
+Module A delivers the **identity and wallet layer** for Vantage: passwordless login, embedded wallets, gasless transactions (Account Abstraction), and NFT indexing. It can be developed and tested without the settlement backend or smart contracts. When combined with Modules B and C, the full app uses A for login, "My Vault," and **executing the on-chain `settle()` call** (frontend claims the permit from B and executes the transaction).
 
 ---
 
 ## Sequence Flow
 
-Standalone flow: login, My Vault (NFT list), and sign UserOp (for when combined with C).
+Standalone flow: login, My Vault (NFT list), and sign UserOp (for when combined with B).
 
 ```mermaid
 sequenceDiagram
@@ -83,17 +83,17 @@ sequenceDiagram
 
 ## Interfaces (What A Exposes to Others)
 
-### To Settlement (C)
+### To Settlement (B)
 
 - **Auth:** Backend receives `DIDToken` from frontend; validates via Magic and gets `publicAddress`.
-- **NFT data:** C needs transfer history for a given token/owner to compute holding period for the royalty quote. Either:
-  - C calls Alchemy NFT API directly with contract address and owner, or
+- **NFT data:** B needs transfer history for a given token/owner to compute holding period for the royalty quote. Either:
+  - B calls Alchemy NFT API directly with contract address and owner, or
   - A exposes an API/SDK method such as `getTransferHistory(ownerAddress, contractAddress)` that wraps Alchemy.
 
-### To Chain (B) — "Ticket Booth" Model
+### To Chain (C) — "Ticket Booth" Model
 
-- **Execution:** After reseller pays (C sets status to `paid`), the **frontend (A) calls `GET /permit` from C**, receives the permit and settle params, then **executes `settle()` on the contract (B)** via Alchemy AA (gasless).
-- C does **not** execute settle; frontend does.
+- **Execution:** After reseller pays (B sets status to `paid`), the **frontend (A) calls `GET /permit` from B**, receives the permit and settle params, then **executes `settle()` on the contract (C)** via Alchemy AA (gasless).
+- B does **not** execute settle; frontend does.
 
 ### To Frontend (Full App)
 
@@ -186,5 +186,5 @@ Without these limits, malicious users could spam invalid `settle()` calls to dra
 ## When Combined With B and C
 
 - Full app uses A for all auth, vault, and **executing settle()**
-- After reseller pays via C, frontend (A) calls `GET /permit` from C, receives the permit, then uses Alchemy AA SDK (from A) to execute `settle()` on B (gasless)
-- C uses Alchemy NFT API (same config as A) for NFT data (holding period for royalty quotes); C generates permits but does not submit transactions
+- After reseller pays via B, frontend (A) calls `GET /permit` from B, receives the permit, then uses Alchemy AA SDK (from A) to execute `settle()` on C (gasless)
+- B uses Alchemy NFT API (same config as A) for NFT data (holding period for royalty quotes); B generates permits but does not submit transactions
