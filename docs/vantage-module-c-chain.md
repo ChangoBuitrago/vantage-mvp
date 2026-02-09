@@ -52,7 +52,7 @@ sequenceDiagram
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **Smart contracts** | Solidity ^0.8.20, OpenZeppelin | ERC-721, ECDSA, EIP712, Ownable |
+| **Smart contracts** | Solidity ^0.8.20, OpenZeppelin | ERC-721, ECDSA, EIP712, Ownable, Pausable |
 | **Framework** | Foundry | Build, test, deploy (forge, cast, anvil) |
 | **Chain** | Polygon (Amoy testnet, Mainnet) | NFT registry, settlement execution |
 
@@ -61,12 +61,13 @@ sequenceDiagram
 ## Deliverables
 
 1. **VantageAssetRegistry** contract:
-   - ERC-721 + EIP712 (OpenZeppelin: ERC721, Ownable, ECDSA, EIP712)
-   - `mint(to, metadataHash)` — owner only, stores on-chain metadata hash
+   - ERC-721 + EIP712 (OpenZeppelin: ERC721, Ownable, ECDSA, EIP712, **Pausable**)
+   - **Kill switch (EU Data Act Art. 30):** Inherits `Pausable`. `pause()` / `unpause()` — `onlyOwner`. **Regulatory interruption:** `mint()` and `settle()` use `whenNotPaused`; when paused, mint and settle revert.
+   - `mint(to, metadataHash)` — owner only, when not paused, stores on-chain metadata hash
    - `setBaseURI(baseURI)` / `baseURI()` — owner configures metadata endpoint for marketplaces
-   - `tokenURI(tokenId)` — returns baseURI + tokenId (standard ERC721 for OpenSea compatibility)
+   - `tokenURI(tokenId)` — returns baseURI + tokenId (standard ERC721 for OpenSea compatibility); must remain publicly accessible so users can always view product data
    - `transferFrom` / `safeTransferFrom` overridden to revert (direct transfers disabled)
-   - `settle(transferId, from, to, tokenId, salePrice, permit)` — verifies EIP-712 signature then transfers (gas optimized: single `_ownerOf` call)
+   - `settle(transferId, from, to, tokenId, salePrice, permit)` — when not paused, verifies EIP-712 signature then transfers (gas optimized: single `_ownerOf` call)
    - `DOMAIN_SEPARATOR()` — view for backend to build matching EIP-712 domain
    - Replay protection: `usedTransferIds` mapping; each `transferId` may be used once
 
@@ -86,7 +87,7 @@ sequenceDiagram
 
 **Minting and metadata:**
 ```solidity
-function mint(address to, bytes32 metadataHash) external onlyOwner returns (uint256);
+function mint(address to, bytes32 metadataHash) external onlyOwner whenNotPaused returns (uint256);
 function setBaseURI(string calldata baseURI) external onlyOwner;
 function tokenURI(uint256 tokenId) external view returns (string memory);
 ```
@@ -100,7 +101,14 @@ function settle(
     uint256 tokenId,
     uint256 salePrice,
     bytes memory permit
-) external;
+) external whenNotPaused;
+```
+
+**Kill switch (governance):**
+```solidity
+function pause() external onlyOwner;
+function unpause() external onlyOwner;
+function paused() external view returns (bool);
 ```
 
 **Views:**
@@ -140,13 +148,34 @@ function baseURI() external view returns (string memory);
 
 ## Implementation Notes
 
-- Use OpenZeppelin: `ERC721`, `Ownable`, `ECDSA`, `EIP712`
+- Use OpenZeppelin: `ERC721`, `Ownable`, `ECDSA`, `EIP712`, **`Pausable`**
 - Constructor: `complianceSigner` (backend public address) stored as immutable; EIP712 initialized with name `"VantageAssetRegistry"` and version `"1"`
+- **Governance:** Only the authorized controller (owner) can trigger safe termination (EU Data Act Article 30) via `pause()` / `unpause()`
 - Replay protection: `usedTransferIds[transferId]` set to `true` after each successful settle
 - Custom errors: `DirectTransfersDisabled`, `InvalidPermitSigner`, `TransferIdAlreadyUsed`, `NotTokenOwner`, `TokenDoesNotExist`
 - Settlement is permissionless: any caller can invoke `settle()` with a valid permit (e.g. user or relayer via Alchemy AA)
 - **Marketplace compatibility:** `tokenURI()` returns `baseURI + tokenId` for OpenSea/Rarible; owner sets base via `setBaseURI()`
 - **Gas optimization:** `settle()` uses single `_ownerOf()` call for both existence and ownership checks
+
+---
+
+## EU Data Act Article 30 (2026 MVP)
+
+The contract is technically prepared for a 2026 MVP launch within the EU.
+
+| Component | Status | Implementation |
+|-----------|--------|----------------|
+| **Governance** | ✅ Compliant | `onlyOwner` + `Pausable` (kill switch) |
+| **Integrity** | ✅ Compliant | EIP-712 signed permits (backend verification) |
+| **Privacy** | ✅ Compliant | On-chain `metadataHash` (link-breaking strategy) |
+| **Marketplace** | ✅ Compliant | ERC-721 standard (`tokenURI`, `baseURI`) |
+
+- **Mandatory kill switch:** `Pausable` provides `pause()` and `unpause()` (owner only).
+- **Regulatory interruption:** `whenNotPaused` on `mint()` and `settle()` — no new mints or settlements while paused.
+- **Governance control:** `onlyOwner` ensures only the designated legal entity can trigger safe termination.
+- **Data Act safety:** Ensure `tokenURI` is publicly accessible so users can always view their product data.
+
+**ESPR (Digital Product Passport):** For 2026 MVP, metadata served at `tokenURI` should use **JSON-LD** and include mandatory DPP fields (e.g. material origin, carbon footprint, repairability scores) as required by the regulation.
 
 ---
 
@@ -156,6 +185,7 @@ function baseURI() external view returns (string memory);
 - [x] Mint (owner only) works; direct `transferFrom` / `safeTransferFrom` revert
 - [x] With a valid EIP-712 permit (signed by compliance signer), `settle()` transfers NFT and emits `TransferSettled`
 - [x] Invalid or wrong-signer permit reverts; replay (reused transferId) reverts
+- [x] When paused, `mint()` and `settle()` revert; `pause()` / `unpause()` restricted to owner
 - [x] ABI and EIP-712 permit format documented for B (see [implementation plan](module-c-implementation-plan.md))
 
 ---

@@ -77,7 +77,7 @@ sequenceDiagram
 1. **API endpoints:**
    - `GET /quote?tokenId=...&salePrice=...` — returns royalty amount (uses holding period from A or Alchemy NFT API)
    - `POST /transfer/initiate` — create transfer (`pending_payment`), create Stripe Checkout, return checkout URL and transferId
-   - `GET /transfer/:id/permit` — (auth required) if status is `paid`, generate and return permit + settle params (transferId, from, to, tokenId, salePrice)
+   - `GET /transfer/:id/permit` — (auth required) if status is `paid`, **check registry is not paused** (e.g. call `registry.paused()` via RPC). If paused, return **503** with a clear message (e.g. "Service temporarily suspended for compliance or maintenance"); otherwise generate and return permit + settle params (transferId, from, to, tokenId, salePrice)
    - `GET /transfers?status=paid&resellerId={userId}` — (auth required) list incomplete transfers for user (for "stuck state" recovery when user returns after paying)
    - `POST /transfer/:id/complete` — (optional) frontend calls after settle succeeds; updates status to `settled` and stores txHash
    - `GET /transfer/:id/status` — return transfer status
@@ -102,6 +102,7 @@ sequenceDiagram
 ### From C (Chain)
 
 - **Contract address** and **ABI**
+- **Pause check:** Before issuing a permit, B must call `registry.paused()`. If `true`, do not generate a permit; return an error to the frontend (see deliverables).
 - **EIP-712 permit format:** Domain (name `"VantageAssetRegistry"`, version `"1"`, chainId, verifyingContract), type `Transfer(uint256 transferId, address from, address to, uint256 tokenId, uint256 salePrice)`. Backend signs with `signTypedData`; contract verifies via `_hashTypedDataV4` and requires `recoveredSigner == COMPLIANCE_SIGNER`. B can call **DOMAIN_SEPARATOR()** on the contract to derive the correct domain for signing.
 
 ---
@@ -110,9 +111,9 @@ sequenceDiagram
 
 1. Reseller initiates → B creates transfer (`pending_payment`) and Stripe session → returns checkout URL
 2. Reseller pays → Stripe webhook → B sets `paid` (does not execute settle)
-3. Reseller (frontend) calls `GET /permit` → B returns permit if status is `paid`
+3. Reseller (frontend) calls `GET /permit` → B checks `registry.paused()`; if paused, B returns error (e.g. 503, "Service temporarily suspended"); otherwise B returns permit if status is `paid`
 4. Frontend (A) builds UserOp and calls `settle()` via Alchemy AA (gasless) → Contract executes
-5. (Optional) Frontend calls `POST /transfer/:id/complete` with txHash → C sets `settled`
+5. (Optional) Frontend calls `POST /transfer/:id/complete` with txHash → B sets `settled`
 
 **Recovery flow (if user closes browser after paying):**
 1. User logs back in → Frontend (A) calls `GET /transfers?status=paid&resellerId={userId}`
@@ -171,7 +172,7 @@ stateDiagram-v2
 - [ ] Quote returns correct royalty for a given token and sale price (with mocked or real holding period)
 - [ ] Initiate creates transfer and Stripe session; redirect to checkout
 - [ ] On payment success webhook: status set to `paid`
-- [ ] GET /permit returns permit if status is `paid`; 402 or error if `pending_payment`
+- [ ] GET /permit returns permit if status is `paid` and registry is not paused; 402 or error if `pending_payment`; **503** (or equivalent) with user-facing message (e.g. "Service temporarily suspended for compliance or maintenance") when contract is paused
 - [ ] Permit is idempotent (same permit for same transfer, or deterministic generation)
 - [ ] Auth check on GET /permit (only reseller can claim it)
 - [ ] GET /transfers?status=paid returns incomplete transfers for authenticated user (stuck state recovery)
@@ -182,5 +183,14 @@ stateDiagram-v2
 ## When Combined With A and C
 
 - Frontend (A) uses Magic for login and "My Vault"; after reseller pays (B), frontend calls `GET /permit` from B, then uses A's Alchemy AA SDK to execute `settle()` (gasless)
+- **B must check `registry.paused()` before generating a permit.** If the contract is paused, B returns a clear error (e.g. 503) so the frontend (A) can show "Service temporarily suspended for compliance or maintenance" and not attempt `settle()`
 - B's permit signer matches C's `COMPLIANCE_SIGNER` so the contract accepts the permit
 - Full flow: Reseller pays exit tax via B → B sets `paid` → Frontend (A) claims permit from B → Frontend executes `settle()` on C (gas sponsored) → Collector receives NFT
+
+---
+
+## GDPR (2026 MVP — Module B Database)
+
+- **Storage:** Personal data (KYC, names) must stay in the off-chain database only.
+- **Erasure:** Implement a **Hard Delete** API: when a user deletes their account, purge their database record. The on-chain `metadataHash` remains but becomes an anonymous dead link.
+- **Lawful basis:** Update Terms of Service to state that wallet addresses are processed for **"Performance of a Contract."**

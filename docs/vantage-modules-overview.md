@@ -33,7 +33,7 @@ The system is split into three parts you can build and test **separately**, then
 
 **"The Turnstile"**
 
-* **What it does:** The Smart Contract. It remains locked until a cryptographic signature is presented. Blocks all standard transfers; only allows movement via `settle()` with a valid permit.
+* **What it does:** The Smart Contract. It remains locked until a cryptographic signature is presented. Blocks all standard transfers; only allows movement via `settle()` with a valid permit. Includes **EU Data Act Article 30** safe termination (kill switch: `Pausable`, `whenNotPaused` on mint/settle, `onlyOwner`).
 * **Key Responsibility:** Security and final settlement. It trusts no one except the cryptographic signature from Module B.
 * **Tech:** Solidity ^0.8.20, OpenZeppelin (ERC-721), Foundry (Polygon Amoy testnet / Mainnet).
 

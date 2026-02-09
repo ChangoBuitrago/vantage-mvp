@@ -92,6 +92,7 @@ sequenceDiagram
 ### To Chain (C) — "Ticket Booth" Model
 
 - **Execution:** After reseller pays (B sets status to `paid`), the **frontend (A) calls `GET /permit` from B**, receives the permit and settle params, then **executes `settle()` on the contract (C)** via Alchemy AA (gasless).
+- If B returns an error because the registry is paused (e.g. 503), the frontend should display a clear message such as **"Service is temporarily suspended for compliance or maintenance"** and not attempt to call `settle()`.
 - B does **not** execute settle; frontend does.
 
 ### To Frontend (Full App)
@@ -186,4 +187,5 @@ Without these limits, malicious users could spam invalid `settle()` calls to dra
 
 - Full app uses A for all auth, vault, and **executing settle()**
 - After reseller pays via B, frontend (A) calls `GET /permit` from B, receives the permit, then uses Alchemy AA SDK (from A) to execute `settle()` on C (gasless)
+- If B returns a "contract paused" or service-suspended error when claiming the permit, A should show the corresponding message and **not** submit `settle()`
 - B uses Alchemy NFT API (same config as A) for NFT data (holding period for royalty quotes); B generates permits but does not submit transactions
