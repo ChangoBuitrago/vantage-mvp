@@ -1,6 +1,6 @@
 # Vantage MVP
 
-Governance layer for digital product passports (NFTs): exit tax (royalty) via Stripe, then permit-gated on-chain transfer.
+Governance layer for digital product passports (NFTs).
 
 ## Docs
 
