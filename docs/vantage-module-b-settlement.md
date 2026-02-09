@@ -5,7 +5,6 @@
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Quote API, Stripe payment, permit generation (stateless "Ticket Booth")  
 **Depends on:** Module A (identity, NFT data), Module C (contract address, permit format)  
-**Reference:** [vantage-technical-spec.md](../vantage-technical-spec.md)
 
 ---
 
@@ -103,7 +102,7 @@ sequenceDiagram
 ### From C (Chain)
 
 - **Contract address** and **ABI**
-- **Permit format:** `keccak256(abi.encodePacked(transferId, from, to, tokenId, salePrice))` signed by backend; contract expects this and `COMPLIANCE_SIGNER`
+- **EIP-712 permit format:** Domain (name `"VantageAssetRegistry"`, version `"1"`, chainId, verifyingContract), type `Transfer(uint256 transferId, address from, address to, uint256 tokenId, uint256 salePrice)`. Backend signs with `signTypedData`; contract verifies via `_hashTypedDataV4` and requires `recoveredSigner == COMPLIANCE_SIGNER`. B can call **DOMAIN_SEPARATOR()** on the contract to derive the correct domain for signing.
 
 ---
 

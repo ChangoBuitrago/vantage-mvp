@@ -5,7 +5,6 @@
 **Vantage Settlement Protocol — Build Independently, Combine Later**  
 **Scope:** Auth, embedded wallet, gasless signing, NFT list and transfer history  
 **Depends on:** Nothing (standalone)  
-**Reference:** [vantage-technical-spec.md](../vantage-technical-spec.md)
 
 ---
 
@@ -128,7 +127,7 @@ const transfers = await alchemy.nft.getTransfersForOwner(ownerAddress, {
 ```
 
 **Alchemy AA:**  
-Magic wallet is the signer/owner of the Smart Account. Frontend (A) builds the UserOp for `settle()`, uses Magic to sign, and submits via Alchemy Bundler with Gas Manager policy (e.g. sponsor only `settle()` on Vantage contract). Backend (C) does not submit transactions; it only generates permits.
+Magic wallet is the signer/owner of the Smart Account. Frontend (A) builds the UserOp for `settle()`, uses Magic to sign, and submits via Alchemy Bundler with Gas Manager policy (e.g. sponsor only `settle()` on Vantage contract). Backend (B) does not submit transactions; it only generates permits.
 
 **Account Abstraction Flow (How Gasless Transactions Work):**
 
